@@ -1,0 +1,87 @@
+# NOTE: update this with your service name
+service: notes-api
+
+# Create an optimized package for our functions
+package:
+  individually: true
+
+# Plugins for additional functionality
+plugins:
+  - serverless-bundle # Package our functions with Webpack
+  - serverless-offline
+  - serverless-dotenv-plugin # Load .env as environment variables
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: prod
+  region: us-east-1
+
+  # These environment variables are made available to our functions under process.env
+  environment:
+    tableName: notes
+
+  # 'iamRoleStatements' defines the permission policy for the Lambda function
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Scan
+        - dynamodb:Query
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTable
+      Resource: "arn:aws:dynamodb:us-east-1:*:*"
+
+functions:
+  # Defines an HTTP API endpoint that calls the main function in create.js
+  create:
+    handler: create.main
+    events:
+      - http:
+          path: notes
+          method: post
+          cors: true
+          authorizer: aws_iam
+  get:
+  # Defines an HTTP API endpoint that calls the main function in get.js
+    handler: get.main
+    events:
+      - http:
+          path: notes/{id}
+          method: get
+          cors: true
+          authorizer: aws_iam
+  list:
+    # Defines an HTTP API endpoint that calls the main function in list.js
+    #- path: url path is /notes
+    #- method: GET request
+    handler: list.main
+    events:
+      - http:
+          path: notes
+          method: get
+          cors: true
+          authorizer: aws_iam
+  update:
+    handler: update.main
+    events:
+      - http:
+          path: notes/{id}
+          method: put
+          cors: true
+          authorizer: aws_iam
+  delete:
+    handler: delete.main
+    events:
+      - http:
+          path: notes/{id}  # URL path for deleting a note
+          method: delete     # HTTP method is DELETE
+          cors: true
+          authorizer: aws_iam
+
+
+
+resources:
+  - ${file(resources/api-gateway-errors.yml)}
